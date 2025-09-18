@@ -1,10 +1,10 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const connectDB = require('./config/db');
-const testRoutes = require('./routes/testRoute');
-const { errorHandler } = require('./middlewares/errorMiddleware');
-
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const connectDB = require("./config/db");
+const testRoutes = require("./routes/testRoute");
+const { errorHandler } = require("./middlewares/errorMiddleware");
+const authRoutes = require("./routes/authRoutes.js");
 const app = express();
 
 // Connect to MongoDB
@@ -15,7 +15,8 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-app.use('/api/test', testRoutes);
+app.use("/api/test", testRoutes);
+app.use("/api/auth", authRoutes);
 
 // Error handling middleware (last middleware)
 app.use(errorHandler);
