@@ -1,16 +1,27 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const User = require("../models/User");
+const User = require("../models/User.js");
+const rateLimit = require("express-rate-limit");
+const SendEmail = require("../services/sendEmail.js");
+
+// Rate limiter for login attempts
+const loginRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 2,
+  message: "Too many login attempts from this IP, please try again later.",
+});
 
 // REGISTER USER
 const registerUser = async (req, res) => {
   try {
     const { name, industryName, phone, email, password, address } = req.body;
+    console.log("name: ", name);
 
     const existingUser = await User.findOne({ email });
-    if (existingUser) return res.status(400).json({ message: "User already exists" });
+    if (existingUser)
+      return res.status(400).json({ message: "User already exists" });
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 12);
 
     const newUser = new User({
       name,
@@ -19,16 +30,112 @@ const registerUser = async (req, res) => {
       email,
       password: hashedPassword,
       address,
+      isVerified: false,
     });
 
+    const verificationToken = jwt.sign(
+      { userId: newUser._id, email: newUser.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "1m" }
+    );
+
     await newUser.save();
-    res.status(201).json({ message: "User registered successfully ✅" });
+
+    const verificationUrl = `http://localhost:5173/verify-email/${verificationToken}`;
+    await SendEmail(
+      process.env.EMAIL_USER,
+      email,
+      "Email Verification",
+      `<p>Click <a href="${verificationUrl}">here</a> to verify your email address.</p>
+      <p>This link will expire in 1 minute.</p>
+      `
+    );
+
+    res.status(201).json({
+      message:
+        "User registered successfully. Please check your email to verify your account.",
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// LOGIN USER
+// VERIFY USER
+const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.params;
+    console.log("token: ", token);
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("decoded: ", decoded);
+
+    const user = await User.findById(decoded.userId);
+    console.log("user: ", user);
+
+    if (!user) {
+      return res.status(400).json({ message: "User not found." });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ message: "Email is already verified." });
+    }
+
+    setTimeout(async () => {
+      user.isVerified = true;
+      await user.save();
+
+      res.status(200).json({
+        message: "Email successfully verified! You can now log in.",
+      });
+    }, 2000);
+  } catch (error) {
+    if (error.name === "TokenExpiredError") {
+      return res
+        .status(400)
+        .json({ message: "Verification token has expired." });
+    }
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Resend verification email endpoint
+const resendVerificationEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ message: "User not found." });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ message: "Email is already verified." });
+    }
+
+    const newVerificationToken = jwt.sign(
+      { userId: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "1m" }
+    );
+
+    const verificationUrl = `http://localhost:5173/verify-email/${newVerificationToken}`;
+    await SendEmail(
+      process.env.EMAIL_USER,
+      user.email,
+      "Email Verification",
+      `<p>Click <a href="${verificationUrl}">here</a> to verify your email address.</p><p>This link will expire in 1 minute.</p>`
+    );
+
+    res.status(200).json({
+      message:
+        "A new verification email has been sent. Please check your inbox.",
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// LOGIN USER with rate limiting
 const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -36,10 +143,19 @@ const loginUser = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: "Invalid credentials" });
+    if (!user.isVerified) {
+      return res
+        .status(400)
+        .json({ message: "Please verify your email before logging in." });
+    }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch)
+      return res.status(400).json({ message: "Invalid credentials" });
+
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
 
     res.json({
       token,
@@ -57,4 +173,15 @@ const loginUser = async (req, res) => {
   }
 };
 
-module.exports = { registerUser, loginUser };
+// Apply rate limiter to login route
+const applyLoginRateLimiter = (app) => {
+  app.use("/api/auth/login", loginRateLimiter);
+};
+
+module.exports = {
+  registerUser,
+  loginUser,
+  verifyEmail,
+  applyLoginRateLimiter,
+  resendVerificationEmail,
+};

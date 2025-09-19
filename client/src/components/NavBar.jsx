@@ -1,20 +1,23 @@
 // src/components/Navbar.js
 import React from "react";
 import { useAuth } from "../hooks/useAuth";
+import Cookies from "js-cookie";
+import { useNavigate } from "react-router-dom";
 
 const Navbar = () => {
-  const { user, logout } = useAuth(); // Access user and logout function
+  const { user } = useAuth(); // Access user and logout function
+  const navigate = useNavigate();
+
+  const logout = () => {
+    // Remove the token from cookies
+    Cookies.remove("token");
+
+    navigate("/login");
+  };
 
   return (
     <nav>
-      {user ? (
-        <>
-          <span>Welcome, {user.name}</span>
-          <button onClick={logout}>Logout</button>
-        </>
-      ) : (
-        <span>Please log in</span>
-      )}
+      <button onClick={logout}>Logout</button>
     </nav>
   );
 };

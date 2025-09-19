@@ -1,18 +1,52 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
 
 export default function LoginSection() {
   const navigate = useNavigate();
+  const [data, setData] = useState(true);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // TODO: add login logic (e.g. API call)
-    navigate("/home"); // redirect after login
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
   };
+
+  const handleSubmit = async (e) => {
+    setData(false);
+    e.preventDefault();
+    const response = await fetch("http://localhost:5000/api/auth/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(formData),
+    });
+    if (response.ok) {
+      const data = await response.json();
+      console.log("Login successful! Data:", data);
+
+      Cookies.set("token", data.token, { expires: 1, path: "/" });
+      // setData(true);
+      navigate("/home");
+    } else {
+      console.error("Login failed");
+    }
+  };
+
+  // if (!data) return <Loader />;
+  // else if (data) navigate("/home");
 
   return (
     <div className="min-w-screen flex items-center justify-center min-h-screen bg-gradient-to-b from-sky-200 to-white">
       <div className="bg-white/70 backdrop-blur-md shadow-xl rounded-2xl p-8 w-full max-w-md">
-        
         {/* Icon */}
         <div className="flex flex-col items-center mb-6">
           <div className="bg-sky-100 p-3 rounded-full mb-3">
@@ -32,6 +66,9 @@ export default function LoginSection() {
             placeholder="Email"
             className="w-full px-4 py-2 bg-gray-600 border rounded-lg text-white placeholder-gray-300 focus:ring-2 focus:ring-sky-400 focus:outline-none"
             required
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
           />
 
           {/* Password */}
@@ -40,6 +77,9 @@ export default function LoginSection() {
             placeholder="Password"
             className="w-full px-4 py-2 bg-gray-600 border rounded-lg text-white placeholder-gray-300 focus:ring-2 focus:ring-sky-400 focus:outline-none"
             required
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
           />
 
           {/* Submit Button */}

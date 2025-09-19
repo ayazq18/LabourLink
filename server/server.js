@@ -7,18 +7,14 @@ const { errorHandler } = require("./middlewares/errorMiddleware");
 const authRoutes = require("./routes/authRoutes.js");
 const app = express();
 
-// Connect to MongoDB
 connectDB();
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Routes
-app.use("/api/test", testRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/test", testRoutes);
 
-// Error handling middleware (last middleware)
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
