@@ -5,6 +5,42 @@ import Loader from "./Loader";
 export default function RegisterSection() {
   const navigate = useNavigate();
   const [data, setData] = useState(true);
+  const [error, setError] = useState("");
+  const [invalidFields, setInvalidFields] = useState({});
+  
+  const getInputClasses = (field) =>
+    `w-full px-4 py-2 bg-gray-600 border rounded-lg focus:ring-2 focus:ring-sky-400 focus:outline-none ${
+      invalidFields[field] ? "border-red-500 focus:outline-red-500" : ""
+    }`;
+
+  const getAddressInputClasses = (field) =>
+    `px-4 py-2 bg-gray-600 border rounded-lg focus:ring-2 focus:ring-sky-400 focus:outline-none ${
+      invalidFields[field] ? "border-red-500" : ""
+    }`;
+
+  const validateForm = () => {
+    const newInvalidFields = {};
+
+    // Top-level fields
+    if (!formData.name.trim()) newInvalidFields.name = true;
+    if (!formData.industryName.trim()) newInvalidFields.industryName = true;
+    if (!formData.phone.trim()) newInvalidFields.phone = true;
+    if (!formData.email.trim()) newInvalidFields.email = true;
+    if (!formData.password.trim()) newInvalidFields.password = true;
+    // if (!formData.confirmPassword.trim())
+    //   newInvalidFields.confirmPassword = true;
+
+    // Address fields
+    const address = formData.address;
+    if (!address.state.trim()) newInvalidFields.state = true;
+    if (!address.city.trim()) newInvalidFields.city = true;
+    if (!address.tehsil.trim()) newInvalidFields.tehsil = true;
+    if (!address.zip.trim()) newInvalidFields.zip = true;
+
+    setInvalidFields(newInvalidFields);
+
+    return Object.keys(newInvalidFields).length === 0;
+  };
 
   const [formData, setFormData] = useState({
     name: "Ayaz",
@@ -12,7 +48,7 @@ export default function RegisterSection() {
     phone: "7841827384",
     email: "ayazq18@gmail.com",
     password: "password123",
-    confirmPassword: "password123",
+    // confirmPassword: "password123",
     address: {
       state: "State",
       city: "City",
@@ -43,22 +79,33 @@ export default function RegisterSection() {
   const handleSubmit = async (e) => {
     setData(false);
     e.preventDefault();
-    // Handle form submission logic here
-    const response = await fetch("http://localhost:5000/api/auth/register", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(formData),
-    });
-    if (response.ok) {
-      const data = await response.json();
-      console.log("====>", data);
-      setData(true);
-      navigate("/registration-success");
-    } else {
-      console.error("Registration failed");
-      alert("Registration failed, User may already exist");
+
+    if (!validateForm()) {
+      setError("Please fill in all required fields.");
+      return;
+    }
+    try {
+      // Handle form submission logic here
+      const response = await fetch("http://localhost:5000/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        console.log("====>", data);
+        setData(true);
+        navigate("/registration-success");
+      } else {
+        console.error("Registration failed");
+        const errorData = await response.json();
+        setError(errorData.message);
+        setData(true);
+      }
+    } catch (error) {
+      console.log("error: ", error);
       setData(true);
       navigate("/register");
     }
@@ -80,6 +127,7 @@ export default function RegisterSection() {
           <p className="text-sm text-gray-500">
             Create an account to request labour pairs
           </p>
+          {error && <span className="text-red-500">{error}</span>}
         </div>
 
         {/* Form */}
@@ -88,7 +136,7 @@ export default function RegisterSection() {
           <input
             type="text"
             placeholder="Full Name"
-            className="w-full px-4 py-2 bg-gray-600 border rounded-lg focus:ring-2 focus:ring-sky-400 focus:outline-none"
+            className={getInputClasses("name")}
             required
             name="name"
             value={formData.name}
@@ -99,7 +147,7 @@ export default function RegisterSection() {
           <input
             type="text"
             placeholder="Industry Name"
-            className="w-full px-4 py-2 bg-gray-600 border rounded-lg focus:ring-2 focus:ring-sky-400 focus:outline-none"
+            className={getInputClasses("industryName")}
             required
             name="industryName"
             value={formData.industryName}
@@ -110,7 +158,7 @@ export default function RegisterSection() {
           <input
             type="tel"
             placeholder="Phone Number"
-            className="w-full px-4 py-2 bg-gray-600 border rounded-lg focus:ring-2 focus:ring-sky-400 focus:outline-none"
+            className={getInputClasses("phone")}
             required
             name="phone"
             value={formData.phone}
@@ -121,7 +169,7 @@ export default function RegisterSection() {
           <input
             type="email"
             placeholder="Email"
-            className="w-full px-4 py-2 bg-gray-600 border rounded-lg focus:ring-2 focus:ring-sky-400 focus:outline-none"
+            className={getInputClasses("email")}
             required
             name="email"
             value={formData.email}
@@ -132,7 +180,7 @@ export default function RegisterSection() {
           <input
             type="password"
             placeholder="Password"
-            className="w-full px-4 py-2 bg-gray-600 border rounded-lg focus:ring-2 focus:ring-sky-400 focus:outline-none"
+            className={getInputClasses("password")}
             required
             name="password"
             value={formData.password}
@@ -140,22 +188,22 @@ export default function RegisterSection() {
           />
 
           {/* Confirm Password */}
-          <input
+          {/* <input
             type="password"
             placeholder="Confirm Password"
-            className="w-full px-4 py-2 bg-gray-600 border rounded-lg focus:ring-2 focus:ring-sky-400 focus:outline-none"
+            className={getInputClasses("confirmPassword")}
             required
             name="confirmPassword"
             value={formData.confirmPassword}
             onChange={handleChange}
-          />
+          /> */}
 
           {/* Address */}
           <div className="grid grid-cols-2 gap-3">
             <input
               type="text"
               placeholder="State"
-              className="px-4 py-2 bg-gray-600 border rounded-lg focus:ring-2 focus:ring-sky-400 focus:outline-none"
+              className={getAddressInputClasses("state")}
               required
               name="state"
               value={formData.address.state}
@@ -164,7 +212,7 @@ export default function RegisterSection() {
             <input
               type="text"
               placeholder="City"
-              className="px-4 py-2 bg-gray-600 border rounded-lg focus:ring-2 focus:ring-sky-400 focus:outline-none"
+              className={getAddressInputClasses("city")}
               required
               name="city"
               value={formData.address.city}
@@ -173,7 +221,7 @@ export default function RegisterSection() {
             <input
               type="text"
               placeholder="Tehsil"
-              className="px-4 py-2 bg-gray-600 border rounded-lg focus:ring-2 focus:ring-sky-400 focus:outline-none"
+              className={getAddressInputClasses("tehsil")}
               required
               name="tehsil"
               value={formData.address.tehsil}
@@ -182,7 +230,7 @@ export default function RegisterSection() {
             <input
               type="text"
               placeholder="Zip Code"
-              className="px-4 py-2 bg-gray-600 border rounded-lg focus:ring-2 focus:ring-sky-400 focus:outline-none"
+              className={getAddressInputClasses("zip")}
               required
               name="zip"
               value={formData.address.zip}

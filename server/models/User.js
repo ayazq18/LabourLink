@@ -7,6 +7,11 @@ const userSchema = new mongoose.Schema(
     phone: { type: String, required: true, unique: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
+    role: {
+      type: String,
+      enum: ["user", "admin"], // only two roles for now
+      default: "user",
+    },
     address: {
       state: { type: String, required: true },
       city: { type: String, required: true },

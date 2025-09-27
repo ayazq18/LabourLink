@@ -1,11 +1,12 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
+import { useAuth } from "../hooks/useAuth";
 
 export default function LoginSection() {
   const navigate = useNavigate();
-  const [data, setData] = useState(true);
-
+  const [error, setError] = useState("");
+  const { setUser } = useAuth();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -20,24 +21,28 @@ export default function LoginSection() {
   };
 
   const handleSubmit = async (e) => {
-    setData(false);
     e.preventDefault();
-    const response = await fetch("http://localhost:5000/api/auth/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(formData),
-    });
-    if (response.ok) {
-      const data = await response.json();
-      console.log("Login successful! Data:", data);
+    try {
+      const response = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        console.log("Login successful! Data:", data);
 
-      Cookies.set("token", data.token, { expires: 1, path: "/" });
-      // setData(true);
-      navigate("/home");
-    } else {
-      console.error("Login failed");
+        Cookies.set("token", data.token, { expires: 1, path: "/" });
+        setUser(data.user);
+        navigate("/Dashboard");
+      } else {
+        const errorData = await response.json();
+        setError(errorData.message);
+      }
+    } catch (error) {
+      console.log("error: ", error);
     }
   };
 
@@ -56,6 +61,7 @@ export default function LoginSection() {
           <p className="text-sm text-gray-500">
             Login to access your industry dashboard
           </p>
+          {error && <span className="text-red-500">{error}</span>}
         </div>
 
         {/* Form */}

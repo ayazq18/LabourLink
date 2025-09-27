@@ -1,15 +1,17 @@
 import React from "react";
 import MessageDisplay from "../components/MessageDisplay.jsx";
 import Navbar from "../components/NavBar.jsx";
+import AdminDashboard from "../components/AdminDashboardSection.jsx";
 
-const Home = () => {
+const Dashboard = () => {
   return (
     <div>
-      <Navbar />
+      {/* <Navbar />
       <h1>MERN Starter Frontend</h1>
-      <MessageDisplay />
+      <MessageDisplay /> */}
+      <AdminDashboard />
     </div>
   );
 };
 
-export default Home;
+export default Dashboard;

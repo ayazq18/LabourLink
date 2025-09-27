@@ -1,16 +1,15 @@
 import React from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, Outlet } from "react-router-dom";
 import Cookies from "js-cookie";
 
-const PrivateRoute = ({ element: Component, ...rest }) => {
+const PrivateRoute = () => {
   const token = Cookies.get("token");
-  console.log('token: ', token);
 
   if (!token) {
     return <Navigate to="/login" />;
   }
 
-  return Component ? <Component {...rest} /> : null;
+  return <Outlet />; // render child routes here
 };
 
 export default PrivateRoute;
