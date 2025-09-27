@@ -1,7 +1,6 @@
 // src/context/AuthContext.js
 import { createContext, useEffect, useState } from "react";
 import Cookies from "js-cookie";
-import useFetch from "../hooks/useFetch";
 
 // 1. Create the context
 const AuthContext = createContext();
@@ -10,13 +9,12 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
 
-  const { data, loading, error } = useFetch(
-    "http://localhost:5000/api/auth/fetchUsers"
-  );
+  const userFromCookie = Cookies.get("user");
+  const userData = userFromCookie ? JSON.parse(userFromCookie) : null;
 
   useEffect(() => {
-    if (data) setUser(data);
-  }, [data]);
+    if (userData) setUser(userData);
+  }, []);
 
   const login = (userData) => {
     setUser(userData);

@@ -32,7 +32,11 @@ export default function LoginSection() {
       });
       if (response.ok) {
         const data = await response.json();
-        console.log("Login successful! Data:", data);
+
+        Cookies.set("user", JSON.stringify(data.user), {
+          expires: 1,
+          path: "/",
+        });
 
         Cookies.set("token", data.token, { expires: 1, path: "/" });
         setUser(data.user);
@@ -45,9 +49,6 @@ export default function LoginSection() {
       console.log("error: ", error);
     }
   };
-
-  // if (!data) return <Loader />;
-  // else if (data) navigate("/home");
 
   return (
     <div className="min-w-screen flex items-center justify-center min-h-screen bg-gradient-to-b from-sky-200 to-white">

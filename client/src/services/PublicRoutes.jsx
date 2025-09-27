@@ -4,10 +4,9 @@ import Cookies from "js-cookie";
 // PublicRoute component
 const PublicRoute = ({ element: Component, ...rest }) => {
   const token = Cookies.get("token");
-  console.log('token: ', token);
 
   if (token) {
-    return <Navigate to="/home" />;
+    return <Navigate to="/dashboard" />;
   }
 
   return Component ? <Component {...rest} /> : null;
